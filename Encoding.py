@@ -7,8 +7,11 @@ FORMATTING INPUT
 ================    
 """
 
-text = "example input"
-encoded_text = "110100010011010011111011000001011110111011001"
+with open('example.txt', 'r') as file:
+    text = file.read()
+
+with open('encoded.txt', 'r') as file:
+    encoded_text = file.read()
 
 """
 ===============
@@ -100,3 +103,4 @@ for i in encoded_text:
     else:
         if i in reverse:
             decoded_text += reverse[i]
+        
