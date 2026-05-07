@@ -53,6 +53,7 @@ for char in text:
 
 for key, val in freq.items():
     heapq.heappush(min_heap, (val, Node(key, val)))
+heapq.heappush(min_heap, (1, Node('EOF', 1)))
 
 # CONSTRUCTING BINARY TREE
 while len(min_heap) != 1:
@@ -78,10 +79,39 @@ CREATING COMPRESSED FILE
 ========================
 """
 
-compressed_code = ''
+with open("compressed.txt", "wb") as file:
+    buffer = 0
+    count = 0
 
-for i in text:
-    compressed_code += code[i]
+    for i in text:
+        current = code[i]
+        for x in current:
+            buffer <<= 1
+            buffer |= int(x)
+            count += 1
+
+            if count == 8:
+                file.write(bytes([buffer]))
+                buffer = 0
+                count = 0
+
+    # Handling overflow
+    end_code = code['EOF']
+    for y in end_code:
+        buffer <<= 1
+        buffer |= int(y)
+        count += 1
+
+        if count == 8:
+            file.write(bytes([buffer]))
+            buffer = 0
+            count = 0
+    if count != 0:
+        while count < 8:
+            buffer <<= 1
+            buffer |= 0
+            count += 1
+        file.write(bytes([buffer]))
 
 """
 =============
@@ -103,4 +133,3 @@ for i in encoded_text:
     else:
         if i in reverse:
             decoded_text += reverse[i]
-        
