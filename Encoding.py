@@ -4,6 +4,20 @@ min_heap = []
 # Input: a string of characters
 text = "example input"
 
+
+# BINARY TREE TRAVERSAL FUNCTION
+def assign_codes(node, current_code, codes):
+    if node.left is None and node.right is None:
+        codes[node.char] = current_code
+        return
+
+    if node.left:
+        assign_codes(node.left, current_code + "0", codes)
+
+    if node.right:
+        assign_codes(node.right, current_code + "1", codes)
+
+
 # BINARY TREE CLASS
 class Node:
     def __init__(self, char, freq):
@@ -15,7 +29,6 @@ class Node:
     def __lt__(self, other):
         return self.freq < other.freq
 
-
 # CREATING FREQUENCY TABLE
 freq = {}
 
@@ -26,7 +39,7 @@ for key, val in freq.items():
     heapq.heappush(min_heap, (val, Node(key, val)))
 
 # CONSTRUCTING BINARY TREE
-while min_heap:
+while len(min_heap) != 1:
     node_1 = heapq.heappop(min_heap)[1]
     node_2 = heapq.heappop(min_heap)[1]
 
@@ -37,4 +50,9 @@ while min_heap:
 
     heapq.heappush(min_heap, (sum, root))
 
-print(min_heap)
+# ASSIGNING BINARY CODES
+code = {}
+root = heapq.heappop(min_heap)[1]
+
+assign_codes(root, '', code)
+print(code)
