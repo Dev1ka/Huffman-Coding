@@ -6,8 +6,9 @@ min_heap = []
 FORMATTING INPUT
 ================    
 """
-# Input: a string of characters
+
 text = "example input"
+encoded_text = "110100010011010011111011000001011110111011001"
 
 """
 ===============
@@ -67,7 +68,6 @@ code = {}
 root = heapq.heappop(min_heap)[1]
 
 assign_codes(root, '', code)
-print(code)
 
 """
 ========================
@@ -79,3 +79,24 @@ compressed_code = ''
 
 for i in text:
     compressed_code += code[i]
+
+"""
+=============
+DECODING TEXT
+=============
+"""
+reverse = {value: key for key, value in code.items()}
+decoded_text = ''
+current = ''
+
+for i in encoded_text:
+    current += i
+
+    if current != '':
+        if current in reverse:
+            decoded_text += reverse[current]
+            current = ''
+
+    else:
+        if i in reverse:
+            decoded_text += reverse[i]
