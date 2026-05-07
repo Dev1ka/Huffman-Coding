@@ -1,8 +1,19 @@
 import heapq
 min_heap = []
 
+"""
+================
+FORMATTING INPUT
+================    
+"""
 # Input: a string of characters
 text = "example input"
+
+"""
+===============
+ASSIGNING CODES
+===============
+"""
 
 
 # BINARY TREE TRAVERSAL FUNCTION
@@ -28,6 +39,7 @@ class Node:
 
     def __lt__(self, other):
         return self.freq < other.freq
+
 
 # CREATING FREQUENCY TABLE
 freq = {}
@@ -56,3 +68,14 @@ root = heapq.heappop(min_heap)[1]
 
 assign_codes(root, '', code)
 print(code)
+
+"""
+========================
+CREATING COMPRESSED FILE
+========================
+"""
+
+compressed_code = ''
+
+for i in text:
+    compressed_code += code[i]
