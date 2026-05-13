@@ -10,9 +10,6 @@ FORMATTING INPUT
 with open('example.txt', 'r') as file:
     text = file.read()
 
-with open('encoded.txt', 'r') as file:
-    encoded_text = file.read()
-
 """
 ===============
 ASSIGNING CODES
@@ -119,17 +116,27 @@ DECODING TEXT
 =============
 """
 reverse = {value: key for key, value in code.items()}
-decoded_text = ''
-current = ''
+current = ""
+end = False
 
-for i in encoded_text:
-    current += i
+with open("decoded.txt", "w") as f_out:
+    with open('compressed.txt', 'rb') as f_in:
+        encoded_data = f_in.read()
 
-    if current != '':
-        if current in reverse:
-            decoded_text += reverse[current]
-            current = ''
+        for byte_value in encoded_data:
+            if end:
+                break
 
-    else:
-        if i in reverse:
-            decoded_text += reverse[i]
+            # byte_value = integer (0-255)
+            # bits = string of 8 bits
+            bits = f"{byte_value:08b}"
+
+            for bit in bits:
+                current += bit
+                if current in reverse:
+                    if reverse[current] == 'EOF':
+                        end = True
+                        break
+
+                    f_out.write(reverse[current])
+                    current = ''
