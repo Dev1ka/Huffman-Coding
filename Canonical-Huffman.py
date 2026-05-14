@@ -5,9 +5,9 @@ with open('example.txt', 'r') as file:
     text = file.read()
 
 """
-===============
-ASSIGNING CODES
-===============
+=======================
+ASSIGNING INITIAL CODES
+=======================
 """
 
 
@@ -68,8 +68,27 @@ assign_codes(root, '', code)
 for key, val in code.items():
     lengths[key] = len(val)
 
+"""
+=========================
+ASSIGNING CANONICAL CODES
+=========================
+"""
+
 # FINDING CANONICAL HUFFMAN CODES
 sorted_dict = dict(sorted(lengths.items(), key=lambda x: (x[1], x[0])))
+
+canonical_codes = {}
+current_code = 0
+prev = 0
+
+for char, length in sorted_dict.items():
+    if prev > 0:
+        current_code <<= (length - prev)
+
+    canonical_codes[char] = f"{current_code:0{length}b}"
+
+    current_code += 1
+    prev = length
 
 """
 ========================
