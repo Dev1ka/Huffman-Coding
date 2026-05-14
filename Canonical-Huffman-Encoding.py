@@ -1,3 +1,4 @@
+# INITIALISING MINHEAP
 import heapq
 min_heap = []
 
@@ -75,17 +76,24 @@ ASSIGNING CANONICAL CODES
 """
 
 # FINDING CANONICAL HUFFMAN CODES
-sorted_dict = dict(sorted(lengths.items(), key=lambda x: (x[1], x[0])))
+sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], x[0]))
+sorted_chars = [x[0] for x in sorted_dict]
+sorted_lens = [y[1] for y in sorted_dict]
 
-canonical_codes = {}
+codes = []
+chars = []
 current_code = 0
 prev = 0
 
-for char, length in sorted_dict.items():
+for i in range(len(sorted_chars)):
+    char = sorted_chars[i]
+    length = sorted_lens[i]
+
     if prev > 0:
         current_code <<= (length - prev)
 
-    canonical_codes[char] = f"{current_code:0{length}b}"
+    chars.append(char)
+    codes.append(f"{current_code:0{length}b}")
 
     current_code += 1
     prev = length
@@ -97,11 +105,22 @@ CREATING COMPRESSED FILE
 """
 
 with open("compressed.txt", "wb") as file:
+    # WRITING ARRAYS AS METADATA
+    chars_line = ",".join(chars) + "\n"
+    codes_line = ",".join(codes) + "\n"
+
+    file.write(chars_line.encode('utf-8'))
+    file.write(codes_line.encode('utf-8'))
+
+    file.write(b"\n")
+
+    # ENCODING REST OF FILE
+    code_lookup = dict(zip(chars, codes))
     buffer = 0
     count = 0
 
     for i in text:
-        current = code[i]
+        current = code_lookup[i]
         for x in current:
             buffer <<= 1
             buffer |= int(x)
@@ -112,7 +131,7 @@ with open("compressed.txt", "wb") as file:
                 buffer = 0
                 count = 0
 
-    # Handling overflow
+    # HANDLING OVERFLOW
     end_code = code['EOF']
     for y in end_code:
         buffer <<= 1
