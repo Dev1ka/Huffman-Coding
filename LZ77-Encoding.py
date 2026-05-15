@@ -44,19 +44,26 @@ ENCODING MATCHES
 =====================
 """
 
-with open('LZ77-Compression.txt', 'w') as file:
-    window_size = 0
-    cursor = 0
-    look_ahead = 0
-    data = ''
+with open('example.txt', 'r') as file:
+    text = file.read()
 
-    while cursor <= len(data):
-        match_dist, match_len = longest_match(data)
-        '''
-        FUNCTION:
-        - Call the function to find the longest match between the search buffer
-          and the look-ahead buffer
-        - Store the result as an LZ77 triplet (distance to match, length of match, next character)
-        - Move the cursor forward plus the next character
-        '''
-        pass
+with open('LZ77-Compression.txt', 'w') as file:
+    window_size = 20
+    look_ahead = 10
+    cursor = 0
+
+    while cursor < len(text):
+        match_dist, match_len = longest_match(text, cursor, window_size, look_ahead)
+
+        # FIND BREAK CHARACTER
+        if (cursor + match_len) < len(text):
+            next_char = text[cursor + match_len]
+
+        # END OF FILE MARKER
+        else:
+            next_char = "EOF"
+
+        # WRITE LZ77 TRIPLET INTO FILE
+        file.write(f"({match_dist}, {match_len}, {next_char})\n")
+
+        cursor += (match_len + 1)
