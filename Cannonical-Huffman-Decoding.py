@@ -29,4 +29,3 @@ with open("decoded.txt", "w") as f_out:
 
                     f_out.write(lookup[current])
                     current = ''
-
