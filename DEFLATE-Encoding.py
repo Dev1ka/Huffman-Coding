@@ -193,25 +193,36 @@ with open("DEFLATE-Compression.txt", "wb") as file:
     # WRITING DECODING INFO
     header = bytearray()
 
-    # byte 0 (total number of chars)
-    header.append(len(code_lookup))
+    # BYTE 0 (total number of chars)
+    total = len(code_lookup)
+    header.append((total >> 8) & 0xFF)
+    header.append(total & 0xFF)
 
-    # ASCII val, bit-length
-    for char, code in code_lookup.items():
-        # find integer val of token
-        if char == 'EOF':
+    # MAPPING SPECIAL TOKENS TO IDs FOR ENCODING
+    pointer_id = 257
+    pointer_map = {}
+
+    for token, code in code_lookup.items():
+        if token == 'EOF':  # EOF special encoding
             token_val = 256
-        else:
-            token_val = ord(char)  # convert character to its 0-255 integer value
 
-        # split the 16-bit integer into two 8-bit bytes
-        high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
-        low_byte = token_val & 0xFF
+        elif type(token) == tuple and token[0] == 'char':
+            token_val = ord(token[1])  # single char
 
-        # write into header arr
-        header.append(high_byte)
-        header.append(low_byte)
-        header.append(len(code))  # stores bit-length as a single byte
+        elif type(token) == tuple and token[0] == 'pointer':
+            if token not in pointer_map:  # check id doesn't already exist
+                pointer_map[token] = pointer_id
+                pointer_id += 1  # changes id for next token
+            token_val = pointer_map[token]
+
+    # split the 16-bit integer into two 8-bit bytes
+    high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
+    low_byte = token_val & 0xFF
+
+    # write into header arr
+    header.append(high_byte)
+    header.append(low_byte)
+    header.append(len(code))  # stores bit-length as a single byte
 
     file.write(header)
 
