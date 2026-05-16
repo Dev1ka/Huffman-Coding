@@ -98,14 +98,25 @@ class Node:
         self.right = None
 
     def __lt__(self, other):
-        return self.freq < other.freq
+        if self.freq != other.freq:
+            return self.freq < other.freq
+        return str(self.char) < str(other.char)
 
+
+# FORMATTING TUPLES
+tuples = []
+
+for item in text.split("\0"):
+    if not item:
+        continue
+    dist, length, char = item.split(",", 2)  # only splits first two commas
+    tuples.append((int(dist), int(length), char))
 
 # CREATING FREQUENCY TABLE
 freq = {}
 
-for char in text:
-    freq[char] = freq.get(char, 0) + 1
+for x in tuples:
+    freq[x] = freq.get(x, 0) + 1
 
 for key, val in freq.items():
     heapq.heappush(min_heap, (val, Node(key, val)))
