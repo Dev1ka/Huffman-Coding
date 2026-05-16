@@ -1,3 +1,5 @@
+import heapq
+
 """
 =============
 LZ77 ENCODING
@@ -58,6 +60,28 @@ with open('LZ77-Compression.txt', 'w') as file:
             current_char = text[cursor]
             file.write(current_char)
             cursor += 1
+
+# CONVERTING LZ77 OUTPUT INTO TUPLES
+with open('LZ77-Compression.txt', 'r') as f:
+    content = f.read()
+
+tuples = []
+cursor = 0
+
+while cursor < len(content):
+    if content[cursor] == '\0':
+        end_marker = content.find('\0', cursor + 1)
+        marker_inside = content[cursor + 1: end_marker].strip(',')
+
+        dist_str, len_str = marker_inside.split('_')
+        dist = int(dist_str)
+        match_len = int(len_str)
+
+        tuples.append(('pointer', (dist, match_len)))  # adding tokens separately
+        cursor = end_marker + 1
+    else:
+        tuples.append(('char', content[cursor])) # adding individual characters separately
+        cursor += 1
 
 """
 ==========================
