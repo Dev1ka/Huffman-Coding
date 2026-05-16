@@ -145,7 +145,7 @@ for key, val in code.items():
     lengths[key] = len(val)
 
 # FINDING CANONICAL HUFFMAN CODES
-sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], x[0]))
+sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], str(x[0])))
 sorted_chars = [x[0] for x in sorted_dict]
 sorted_lens = [y[1] for y in sorted_dict]
 
