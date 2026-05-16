@@ -1,34 +1,45 @@
 tuples = []
 
 """
-=======================
-READING COMPRESSED FILE
-=======================
-"""
-
-with open('LZ77-Compression.txt', 'r') as f:
-    content = f.read()
-    for item in content.split("\0"):
-        if not item:
-            continue
-        dist, length, char = item.split(",", 2)  # only splits first two commas
-        tuples.append((int(dist), int(length), char))
-
-"""
-====================
-DECODING LZ77 TUPLES
-====================
+=================================
+PARSING MIXED LZ77 TEXT + MARKERS
+=================================
 """
 
 decoded_text = ""
-for dist, length, next_char in tuples:
-    if length > 0:
+with open('LZ77-Compression.txt', 'r') as f:
+    content = f.read()
+
+cursor = 0
+while cursor < len(content):
+    if content[cursor] == '\0':  # start of token
+        end_marker = content.find('\0', cursor + 1)  # start at cursor + 1, end at end of token
+
+        # SAVE CONTENTS
+        marker_inside = content[cursor + 1: end_marker]
+
+        # STRIP FORMATTING
+        marker_inside = marker_inside.strip(',')
+        dist_str, len_str = marker_inside.split('_')
+        dist = int(dist_str)
+        match_len = int(len_str)
+
+        # DECODE THE POINTER
         start_index = len(decoded_text) - dist
-        for i in range(length):
+        for i in range(match_len):
             decoded_text += decoded_text[start_index + i]
 
-    if next_char:
-        decoded_text += next_char
+        cursor = end_marker + 1
+
+    else:
+        decoded_text += content[cursor]  # uncompressed chars
+        cursor += 1
+
+"""
+=============
+WRITING FILE
+=============
+"""
 
 with open('LZ77-Decoded.txt', 'w') as file:
     file.write(decoded_text)

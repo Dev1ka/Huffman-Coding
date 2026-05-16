@@ -55,7 +55,7 @@ with open('LZ77-Compression.txt', 'w') as file:
     while cursor < len(text):
         match_dist, match_len = longest_match(text, cursor, window_size, look_ahead)
 
-        # WRITE MATCHES LONG ENOUGH TO OUTWEIGH 7 BYTE TUPLE COST
+        # WRITE MATCHES LONG ENOUGH TO OUTWEIGH 7 BYTE TOKEN COST
         if match_len >= 8:
             file.write(f"\0,{match_dist}_{match_len},\0")
             cursor += match_len
