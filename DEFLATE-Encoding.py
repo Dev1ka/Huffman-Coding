@@ -1,5 +1,3 @@
-import heapq
-
 """
 =============
 LZ77 ENCODING
@@ -43,26 +41,23 @@ def longest_match(data, cursor, window_size, look_ahead_size):
 with open('example.txt', 'r') as file:
     text = file.read()
 
-with open('Initial-Compression.txt', 'w') as file:
-    window_size = 20
-    look_ahead = 10
+with open('LZ77-Compression.txt', 'w') as file:
+    window_size = 4096
+    look_ahead = 258
     cursor = 0
 
     while cursor < len(text):
         match_dist, match_len = longest_match(text, cursor, window_size, look_ahead)
 
-        # FIND BREAK CHARACTER
-        if (cursor + match_len) < len(text):
-            next_char = text[cursor + match_len]
+        # WRITE MATCHES LONG ENOUGH TO OUTWEIGH 7 BYTE TOKEN COST
+        if match_len >= 8:
+            file.write(f"\0,{match_dist}_{match_len},\0")
+            cursor += match_len
 
-        # END OF FILE MARKER
         else:
-            next_char = "EOF"
-
-        # WRITE LZ77 TRIPLET INTO FILE
-        file.write(f"{match_dist},{match_len},{next_char}\0")
-
-        cursor += (match_len + 1)
+            current_char = text[cursor]
+            file.write(current_char)
+            cursor += 1
 
 """
 ==========================
