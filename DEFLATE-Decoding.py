@@ -35,7 +35,7 @@ with open("DEFLATE-Decoded.txt", "w") as f_out:
                 token_key = ('pointer', (dist, length))
 
             else:
-                token_key = chr(token_val)
+                token_key = ('char', chr(token_val))
 
             lengths[token_key] = byte_length
 
