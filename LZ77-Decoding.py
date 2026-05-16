@@ -7,7 +7,7 @@ with open('LZ77-Compression.txt', 'r') as f:
             continue
 
         item = item.strip("(")
-        dist, length, char = item.split(",") # 4 COMMA ISSUE
+        dist, length, char = item.split(",", 2)  # only splits first two commas
         tuples.append((int(dist), int(length), char))
 
 decoded_text = ""
