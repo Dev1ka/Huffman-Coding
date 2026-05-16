@@ -107,17 +107,34 @@ CREATING COMPRESSED FILE
 """
 
 with open("compressed.txt", "wb") as file:
-    # WRITING ARRAYS AS METADATA
-    chars_line = ",".join(chars) + "\n"
-    codes_line = ",".join(codes) + "\n"
+    code_lookup = dict(zip(chars, codes))
 
-    file.write(chars_line.encode('utf-8'))
-    file.write(codes_line.encode('utf-8'))
+    # WRITING DECODING INFO
+    header = bytearray()
 
-    file.write(b"\n")
+    # byte 0 (total number of chars)
+    header.append(len(code_lookup))
+
+    # ASCII val, bit-length
+    for char, code in code_lookup.items():
+        # find integer val of token
+        if char == 'EOF':
+            token_val = 256
+        else:
+            token_val = ord(char)  # convert character to its 0-255 integer value
+
+        # split the 16-bit integer into two 8-bit bytes
+        high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
+        low_byte = token_val & 0xFF
+
+        # write into header arr
+        header.append(high_byte)
+        header.append(low_byte)
+        header.append(len(code))  # stores bit-length as a single byte
+
+    file.write(header)
 
     # ENCODING REST OF FILE
-    code_lookup = dict(zip(chars, codes))
     buffer = 0
     count = 0
 
@@ -134,7 +151,7 @@ with open("compressed.txt", "wb") as file:
                 count = 0
 
     # HANDLING OVERFLOW
-    end_code = code['EOF']
+    end_code = code_lookup['EOF']
     for y in end_code:
         buffer <<= 1
         buffer |= int(y)
