@@ -7,7 +7,7 @@ CANONICAL HUFFMAN DECODING
 current = ""
 end = False
 
-with open("DEFLATE-Decoded.txt", "w") as f_out:
+with open("Initial-Decoded.txt", "w") as f_out:
     with open('DEFLATE-Compression.txt', 'rb') as f_in:
         # GETTING KEYS
         # Byte 0 - length of header (high + low bytes)
