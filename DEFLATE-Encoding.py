@@ -43,7 +43,7 @@ def longest_match(data, cursor, window_size, look_ahead_size):
 with open('example.txt', 'r') as file:
     text = file.read()
 
-with open('LZ77-Compression.txt', 'w') as file:
+with open('Initial-Compression.txt', 'w') as file:
     window_size = 4096
     look_ahead = 258
     cursor = 0
@@ -121,15 +121,6 @@ class Node:
             return self.freq < other.freq
         return str(self.char) < str(other.char)
 
-
-# FORMATTING TUPLES
-tuples = []
-
-for item in text.split("\0"):
-    if not item:
-        continue
-    dist, length, char = item.split(",", 2)  # only splits first two commas
-    tuples.append((int(dist), int(length), char))
 
 # CREATING FREQUENCY TABLE
 freq = {}
