@@ -64,6 +64,6 @@ with open('LZ77-Compression.txt', 'w') as file:
             next_char = "EOF"
 
         # WRITE LZ77 TRIPLET INTO FILE
-        file.write(f"({match_dist}, {match_len}, {next_char})\n")
+        file.write(f"({match_dist}, {match_len}, {next_char})")
 
         cursor += (match_len + 1)

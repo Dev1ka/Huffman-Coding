@@ -1,5 +1,11 @@
 tuples = []
 
+"""
+=======================
+READING COMPRESSED FILE
+=======================
+"""
+
 with open('LZ77-Compression.txt', 'r') as f:
     content = f.read()
     for item in content.split(")"):
@@ -9,6 +15,12 @@ with open('LZ77-Compression.txt', 'r') as f:
         item = item.strip("(")
         dist, length, char = item.split(",", 2)  # only splits first two commas
         tuples.append((int(dist), int(length), char))
+
+"""
+====================
+DECODING LZ77 TUPLES
+====================
+"""
 
 decoded_text = ""
 for dist, length, next_char in tuples:
