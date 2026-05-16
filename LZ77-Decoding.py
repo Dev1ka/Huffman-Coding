@@ -8,11 +8,9 @@ READING COMPRESSED FILE
 
 with open('LZ77-Compression.txt', 'r') as f:
     content = f.read()
-    for item in content.split(")"):
+    for item in content.split("\0"):
         if not item:
             continue
-
-        item = item.strip("(")
         dist, length, char = item.split(",", 2)  # only splits first two commas
         tuples.append((int(dist), int(length), char))
 
