@@ -230,7 +230,7 @@ with open("DEFLATE-Compression.txt", "wb") as file:
     buffer = 0
     count = 0
 
-    for i in text:
+    for i in tuples:
         current = code_lookup[i]
         for x in current:
             buffer <<= 1
