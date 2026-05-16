@@ -62,7 +62,7 @@ with open('Initial-Compression.txt', 'w') as file:
             cursor += 1
 
 # CONVERTING LZ77 OUTPUT INTO TUPLES
-with open('LZ77-Compression.txt', 'r') as f:
+with open('Initial-Compression.txt', 'r') as f:
     content = f.read()
 
 tuples = []
@@ -206,14 +206,14 @@ with open("DEFLATE-Compression.txt", "wb") as file:
                 pointer_id += 1  # changes id for next token
             token_val = pointer_map[token]
 
-    # split the 16-bit integer into two 8-bit bytes
-    high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
-    low_byte = token_val & 0xFF
+        # split the 16-bit integer into two 8-bit bytes
+        high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
+        low_byte = token_val & 0xFF
 
-    # write into header arr
-    header.append(high_byte)
-    header.append(low_byte)
-    header.append(len(code))  # stores bit-length as a single byte
+        # write into header arr
+        header.append(high_byte)
+        header.append(low_byte)
+        header.append(len(code))  # stores bit-length as a single byte
 
     file.write(header)
 

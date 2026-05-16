@@ -24,7 +24,6 @@ with open("Initial-Decoded.txt", "w") as f_out:
 
             # 16-bit integer token value
             token_val = (high_byte << 8) | low_byte
-
             # convert integer into char/ 'EOF'
             if token_val == 256:
                 token_key = "EOF"
