@@ -1,5 +1,3 @@
-# NOTE: NEWLINE + EOF BUGS IN ENCODING
-
 # INITIALISING MINHEAP
 import heapq
 min_heap = []
