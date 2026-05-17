@@ -2,6 +2,8 @@
 import heapq
 import sys
 import getopt
+import time
+import os
 
 # CLI
 program_name = sys.argv[0]
@@ -36,6 +38,9 @@ min_heap = []
 
 with open(input_file, 'r') as file:
     text = file.read()
+
+original_size = os.path.getsize(input_file)
+start_time = time.time()
 
 """
 =======================
@@ -197,3 +202,12 @@ with open(output_file, "wb") as file:
             buffer |= 0
             count += 1
         file.write(bytes([buffer]))
+
+end_time = time.time()
+compressed_size = os.path.getsize(output_file)
+compression_ratio = (1 - compressed_size / original_size) * 100
+
+print(f"Total time:     {end_time - start_time:.3f}s")
+print(f"Original size:  {original_size} bytes")
+print(f"Compressed size:{compressed_size} bytes")
+print(f"Compression:    {compression_ratio:.1f}%")
