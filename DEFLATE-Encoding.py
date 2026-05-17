@@ -37,8 +37,13 @@ LZ77 ENCODING
 =============
 """
 
+# SET CONSTANT VARIABLES
+window_size = 4096
+look_ahead = 258
+emit_match = 8
 
-def longest_match(data, cursor, window_size, look_ahead_size):
+
+def longest_match(data, cursor, window, look_ahead_size):
     """
     Finds longest match within window and look ahead buffer (section to the right of given cursor)
     & returns longest match and dist from cursor to assist in building the LZ77 triple in main loop
@@ -48,7 +53,7 @@ def longest_match(data, cursor, window_size, look_ahead_size):
     best_len = 0
 
     # SEARCHING LENGTH OF WINDOW
-    for i in range(1, window_size + 1):
+    for i in range(1, window + 1):
         match_index = cursor - i
 
         if match_index < 0:
@@ -75,18 +80,14 @@ with open(input_file, 'r') as file:
     text = file.read()
 
 with open(output_file, 'w') as file:
-    window_size = 4096
-    look_ahead = 258
     cursor = 0
 
     while cursor < len(text):
         match_dist, match_len = longest_match(text, cursor, window_size, look_ahead)
 
-        # WRITE MATCHES LONG ENOUGH TO OUTWEIGH 7 BYTE TOKEN COST
-        if match_len >= 8:
+        if match_len >= emit_match:
             file.write(f"\0,{match_dist}_{match_len},\0")
             cursor += match_len
-
         else:
             current_char = text[cursor]
             file.write(current_char)
