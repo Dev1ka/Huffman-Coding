@@ -1,3 +1,35 @@
+# IMPORTS
+import sys
+import getopt
+
+# CLI
+program_name = sys.argv[0]
+
+# Initialize variables
+input_file = None
+output_file = None
+
+try:
+    # Parse arguments excluding the program name
+    opts, args = getopt.getopt(sys.argv[1:], "hi:o:", ["help", "input=", "output="])
+except getopt.GetoptError as err:
+    print(f"Error: {err}")
+    print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+    sys.exit()
+
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+        sys.exit()
+    elif opt in ("-i", "--input"):
+        input_file = arg
+    elif opt in ("-o", "--output"):
+        output_file = arg
+
+if input_file is None or output_file is None:
+    print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+    sys.exit()
+
 """
 ==========================
 CANONICAL HUFFMAN DECODING
@@ -7,8 +39,8 @@ CANONICAL HUFFMAN DECODING
 current = ""
 end = False
 
-with open("Initial-Decoded.txt", "w") as f_out:
-    with open('DEFLATE-Compression.txt', 'rb') as f_in:
+with open(output_file, "w") as f_out:
+    with open(input_file, 'rb') as f_in:
         # GETTING KEYS
         # Byte 0 - length of header (high + low bytes)
         high_total = f_in.read(1)[0]
@@ -105,7 +137,7 @@ LZ77 DECODING
 tuples = []
 
 decoded_text = ""
-with open('Initial-Decoded.txt', 'r') as f:
+with open(output_file, 'r') as f:
     content = f.read()
 
 cursor = 0
@@ -133,5 +165,5 @@ while cursor < len(content):
         decoded_text += content[cursor]  # uncompressed chars
         cursor += 1
 
-with open('DEFLATE-Decoding.txt', 'w') as file:
+with open(output_file, 'w') as file:
     file.write(decoded_text)

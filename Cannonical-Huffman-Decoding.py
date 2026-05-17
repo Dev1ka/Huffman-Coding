@@ -1,8 +1,40 @@
+import sys
+import getopt
+
+# CLI
+program_name = sys.argv[0]
+
+# Initialize variables
+input_file = None
+output_file = None
+
+try:
+    # Parse arguments excluding the program name
+    opts, args = getopt.getopt(sys.argv[1:], "hi:o:", ["help", "input=", "output="])
+except getopt.GetoptError as err:
+    print(f"Error: {err}")
+    print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+    sys.exit()
+
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+        sys.exit()
+    elif opt in ("-i", "--input"):
+        input_file = arg
+    elif opt in ("-o", "--output"):
+        output_file = arg
+
+if input_file is None or output_file is None:
+    print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+    sys.exit()
+
+# MAIN
 current = ""
 end = False
 
-with open("decoded.txt", "w") as f_out:
-    with open('compressed.txt', 'rb') as f_in:
+with open(output_file, "w") as f_out:
+    with open(input_file, 'rb') as f_in:
         # GETTING KEYS
         byte_0 = f_in.read(1)  # byte 0 - length of header
         total = byte_0[0]

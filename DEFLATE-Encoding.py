@@ -1,4 +1,35 @@
+# IMPORTS
 import heapq
+import sys
+import getopt
+
+# CLI
+program_name = sys.argv[0]
+
+# Initialize variables
+input_file = None
+output_file = None
+
+try:
+    # Parse arguments excluding the program name
+    opts, args = getopt.getopt(sys.argv[1:], "hi:o:", ["help", "input=", "output="])
+except getopt.GetoptError as err:
+    print(f"Error: {err}")
+    print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+    sys.exit()
+
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+        sys.exit()
+    elif opt in ("-i", "--input"):
+        input_file = arg
+    elif opt in ("-o", "--output"):
+        output_file = arg
+
+if input_file is None or output_file is None:
+    print(f"Usage: {program_name} -i <input_file> -o <output_file>")
+    sys.exit()
 
 """
 =============
@@ -40,10 +71,10 @@ def longest_match(data, cursor, window_size, look_ahead_size):
     return best_dist, best_len
 
 
-with open('example.txt', 'r') as file:
+with open(input_file, 'r') as file:
     text = file.read()
 
-with open('Initial-Compression.txt', 'w') as file:
+with open(output_file, 'w') as file:
     window_size = 4096
     look_ahead = 258
     cursor = 0
@@ -62,7 +93,7 @@ with open('Initial-Compression.txt', 'w') as file:
             cursor += 1
 
 # CONVERTING LZ77 OUTPUT INTO TUPLES
-with open('Initial-Compression.txt', 'r') as f:
+with open(output_file, 'r') as f:
     content = f.read()
 
 tuples = []
@@ -91,7 +122,7 @@ CANONICAL HUFFMAN ENCODING
 
 min_heap = []
 
-with open('Initial-Compression.txt', 'r') as file:
+with open(output_file, 'r') as file:
     text = file.read()
 
 
@@ -179,7 +210,7 @@ for i in range(len(sorted_chars)):
     prev = length
 
 # ENCODING TEXT (HEADER)
-with open("DEFLATE-Compression.txt", "wb") as file:
+with open(output_file, "wb") as file:
     code_lookup = dict(zip(chars, codes))
 
     # WRITING DECODING INFO
