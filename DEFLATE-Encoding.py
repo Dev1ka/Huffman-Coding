@@ -133,11 +133,6 @@ CANONICAL HUFFMAN ENCODING
 ==========================
 """
 
-min_heap = []
-
-with open(output_file, 'r') as file:
-    text = file.read()
-
 
 # BINARY TREE TRAVERSAL FUNCTION
 def assign_codes(node, current_code, codes):
@@ -166,118 +161,135 @@ class Node:
         return str(self.char) < str(other.char)
 
 
-# CREATING FREQUENCY TABLE
-freq = {}
+def build_huffman_tree(tuples):
+    # CREATING FREQUENCY TABLE
+    freq = {}
+    for x in tuples:
+        freq[x] = freq.get(x, 0) + 1
 
-for x in tuples:
-    freq[x] = freq.get(x, 0) + 1
+    min_heap = []
+    for key, val in freq.items():
+        heapq.heappush(min_heap, (val, Node(key, val)))
+    heapq.heappush(min_heap, (1, Node('EOF', 1)))
 
-for key, val in freq.items():
-    heapq.heappush(min_heap, (val, Node(key, val)))
-heapq.heappush(min_heap, (1, Node('EOF', 1)))
+    # CONSTRUCTING BINARY TREE
+    while len(min_heap) != 1:
+        node_1 = heapq.heappop(min_heap)[1]
+        node_2 = heapq.heappop(min_heap)[1]
 
-# CONSTRUCTING BINARY TREE
-while len(min_heap) != 1:
-    node_1 = heapq.heappop(min_heap)[1]
-    node_2 = heapq.heappop(min_heap)[1]
+        sum = node_1.freq + node_2.freq
+        root = Node(None, sum)
+        root.left = node_1
+        root.right = node_2
 
-    sum = node_1.freq + node_2.freq
-    root = Node(None, sum)
-    root.left = node_1
-    root.right = node_2
+        heapq.heappush(min_heap, (sum, root))
 
-    heapq.heappush(min_heap, (sum, root))
-
-# ASSIGNING BINARY CODES
-code = {}
-lengths = {}
-root = heapq.heappop(min_heap)[1]
-
-assign_codes(root, '', code)
-
-for key, val in code.items():
-    lengths[key] = len(val)
-
-# FINDING CANONICAL HUFFMAN CODES
-sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], str(x[0])))
-sorted_chars = [x[0] for x in sorted_dict]
-sorted_lens = [y[1] for y in sorted_dict]
-
-codes = []
-chars = []
-current_code = 0
-prev = 0
+    return heapq.heappop(min_heap)[1]
 
 
-for i in range(len(sorted_chars)):
-    char = sorted_chars[i]
-    length = sorted_lens[i]
+def get_canonical_codes(root):
+    # ASSIGNING BINARY CODES
+    code = {}
+    lengths = {}
 
-    if prev > 0:
-        current_code <<= (length - prev)
+    assign_codes(root, '', code)
 
-    chars.append(char)
-    codes.append(f"{current_code:0{length}b}")
+    for key, val in code.items():
+        lengths[key] = len(val)
 
-    current_code += 1
-    prev = length
+    # FINDING CANONICAL HUFFMAN CODES
+    sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], str(x[0])))
+    sorted_chars = [x[0] for x in sorted_dict]
+    sorted_lens = [y[1] for y in sorted_dict]
 
-# ENCODING TEXT (HEADER)
-with open(output_file, "wb") as file:
-    code_lookup = dict(zip(chars, codes))
+    codes = []
+    chars = []
+    current_code = 0
+    prev = 0
 
-    # WRITING DECODING INFO
-    header = bytearray()
+    for i in range(len(sorted_chars)):
+        char = sorted_chars[i]
+        length = sorted_lens[i]
 
-    # BYTE 0 (total number of chars)
-    total = len(code_lookup)
-    header.append((total >> 8) & 0xFF)
-    header.append(total & 0xFF)
+        if prev > 0:
+            current_code <<= (length - prev)
 
-    # MAPPING SPECIAL TOKENS TO IDs FOR ENCODING
-    pointer_id = 257
-    pointer_map = {}
+        chars.append(char)
+        codes.append(f"{current_code:0{length}b}")
 
-    for token, code in code_lookup.items():
-        if token == 'EOF':  # EOF special encoding
-            token_val = 256
+        current_code += 1
+        prev = length
 
-        elif type(token) == tuple and token[0] == 'char':
-            token_val = ord(token[1])  # single char
+    return dict(zip(chars, codes))
 
-        elif type(token) == tuple and token[0] == 'pointer':
-            distance, length = token[1]
-            # special character starting point to differentiate pointers
-            header.append(0xFF)
-            header.append(0xFE)
 
-            header.append((distance >> 8) & 0xFF)  # high byte
-            header.append(distance & 0xFF)  # low byte
-            header.append((length >> 8) & 0xFF)  # high byte
-            header.append(length & 0xFF)  # low byte
-            header.append(len(code))
-            continue
+def write_compressed(output_file, tuples, code_lookup):
+    with open(output_file, "wb") as file:
+        # WRITING DECODING INFO
+        header = bytearray()
 
-        # split the 16-bit integer into two 8-bit bytes
-        high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
-        low_byte = token_val & 0xFF
+        # BYTE 0 (total number of chars)
+        total = len(code_lookup)
+        header.append((total >> 8) & 0xFF)
+        header.append(total & 0xFF)
 
-        # write into header arr
-        header.append(high_byte)
-        header.append(low_byte)
-        header.append(len(code))  # stores bit-length as a single byte
+        # MAPPING SPECIAL TOKENS TO IDs FOR ENCODING
+        pointer_id = 257
+        pointer_map = {}
 
-    file.write(header)
-    # ENCODING REST OF FILE
-    buffer = 0
-    count = 0
+        for token, code in code_lookup.items():
+            if token == 'EOF':  # EOF special encoding
+                token_val = 256
 
-    for i in tuples:
-        current = code_lookup[i]
+            elif type(token) == tuple and token[0] == 'char':
+                token_val = ord(token[1])  # single char
 
-        for x in current:
+            elif type(token) == tuple and token[0] == 'pointer':
+                distance, length = token[1]
+                # special character starting point to differentiate pointers
+                header.append(0xFF)
+                header.append(0xFE)
+
+                header.append((distance >> 8) & 0xFF)  # high byte
+                header.append(distance & 0xFF)  # low byte
+                header.append((length >> 8) & 0xFF)  # high byte
+                header.append(length & 0xFF)  # low byte
+                header.append(len(code))
+                continue
+
+            # split the 16-bit integer into two 8-bit bytes
+            high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
+            low_byte = token_val & 0xFF
+
+            # write into header arr
+            header.append(high_byte)
+            header.append(low_byte)
+            header.append(len(code))  # stores bit-length as a single byte
+
+        file.write(header)
+
+        # ENCODING REST OF FILE
+        buffer = 0
+        count = 0
+
+        for i in tuples:
+            current = code_lookup[i]
+
+            for x in current:
+                buffer <<= 1
+                buffer |= int(x)
+                count += 1
+
+                if count == 8:
+                    file.write(bytes([buffer]))
+                    buffer = 0
+                    count = 0
+
+        # HANDLING OVERFLOW
+        end_code = code_lookup['EOF']
+        for y in end_code:
             buffer <<= 1
-            buffer |= int(x)
+            buffer |= int(y)
             count += 1
 
             if count == 8:
@@ -285,21 +297,14 @@ with open(output_file, "wb") as file:
                 buffer = 0
                 count = 0
 
-    # HANDLING OVERFLOW
-    end_code = code_lookup['EOF']
-    for y in end_code:
-        buffer <<= 1
-        buffer |= int(y)
-        count += 1
-
-        if count == 8:
+        if count != 0:
+            while count < 8:
+                buffer <<= 1
+                buffer |= 0
+                count += 1
             file.write(bytes([buffer]))
-            buffer = 0
-            count = 0
 
-    if count != 0:
-        while count < 8:
-            buffer <<= 1
-            buffer |= 0
-            count += 1
-        file.write(bytes([buffer]))
+
+root = build_huffman_tree(tuples)
+code_lookup = get_canonical_codes(root)
+write_compressed(output_file, tuples, code_lookup)
