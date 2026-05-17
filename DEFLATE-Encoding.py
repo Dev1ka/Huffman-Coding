@@ -42,7 +42,7 @@ window_size = 4096
 look_ahead = 258
 emit_match = 8
 min_match = 3
-max_chain = 246 # maximum matches checked per loop
+max_chain = 246  # maximum matches checked per loop
 
 
 def _hash3(data, position):
@@ -59,78 +59,73 @@ def _update_hash(data, position, location, prev):
     """
     if position + 2 < len(data):
         h = _hash3(data, position)  # gets hash of data[position] and the two characters after it as 1 int
-        prev[position] = location[h]  # change current position to previous occurrence
-        location[h] = position  # update most recent occurrence
+        prev[position] = location.get(h, 0)  # chain current pos to previous occurrence of this fingerprint
+        location[h] = position               # update most recent occurrence of this fingerprint
 
 
-def lz77_encode(data, output_file):
+def lz77_encode(data):
     num = len(data)
+    tuples = []
     cursor = 0
     locations = {}
     prev = [0] * num
 
-    with open(output_file, 'w') as file:
-        while cursor < num:
-            # RESET PATTERN INFO
-            best_dist = 0
-            best_len = 0
+    while cursor < num:
+        # RESET PATTERN INFO
+        best_dist = 0
+        best_len = 0
 
-            if cursor + min_match <= num:  # only search if enough chars
-                h = _hash3(data, cursor)  # encode next three chars
-                chain = locations[h]  # lookup prev occurrences (shorten manual search)
-                checked = 0
+        if cursor + min_match <= num:  # only search if enough chars
+            h = _hash3(data, cursor)  # encode next three chars
+            chain = locations.get(h)  # lookup prev occurrences (shorten manual search)
+            checked = 0
 
-                while chain and checked < max_chain:  # go through each occurrence
-                    dist = cursor - chain  # distance to match
-                    if dist > window_size:  # stop if dist exceeds window limit
-                        break
+            while chain and checked < max_chain:  # go through each occurrence
+                dist = cursor - chain  # distance to match
+                if dist > window_size:  # stop if dist exceeds window limit
+                    break
 
-                    limit = min(look_ahead, num - cursor)
-                    match_length = 0
-                    while match_length < limit and data[chain + match_length] == data[cursor + match_length]:
-                        match_length += 1  # manual search until limit reached
+                limit = min(look_ahead, num - cursor)
+                match_length = 0
+                while match_length < limit and data[chain + match_length] == data[cursor + match_length]:
+                    match_length += 1  # manual search until limit reached
 
-                    if match_length > best_len:  # save the longest match
-                        best_len = match_length
-                        best_dist = dist
+                if match_length > best_len:  # save the longest match
+                    best_len = match_length
+                    best_dist = dist
 
-                    chain = prev[chain]
-                    checked += 1
+                chain = prev[chain]
+                checked += 1
 
-            if best_len >= emit_match:  # saving pointer
-                file.write(f"\0,{best_dist}_{best_len},\0")
-                end = cursor + best_len
-                for i in range(cursor, min(end, num - 2)):
-                    _update_hash(data, i, locations, prev)
-                cursor = end
+        if best_len >= emit_match:  # saving pointer
+            tuples.append(('pointer', (best_dist, best_len)))
+            end = cursor + best_len
+            for i in range(cursor, min(end, num - 2)):
+                _update_hash(data, i, locations, prev)
+            cursor = end
+        else:  # saving individual char
+            tuples.append(('char', data[cursor]))
+            _update_hash(data, cursor, locations, prev)
+            cursor += 1
 
-            else:  # saving individual char
-                file.write(data[cursor])
-                _update_hash(data, cursor, locations, prev)
-                cursor += 1
+    return tuples
 
 
-# CONVERTING LZ77 OUTPUT INTO TUPLES
-with open(output_file, 'r') as f:
-    content = f.read()
+def write_initial_compression(path, tuples):
+    with open(path, 'w') as file:
+        for token in tuples:
+            if token[0] == 'pointer':
+                dist, match_len = token[1]
+                file.write(f"\0,{dist}_{match_len},\0")
+            else:
+                file.write(token[1])
 
-tuples = []
-cursor = 0
 
-while cursor < len(content):
-    if content[cursor] == '\0':
-        end_marker = content.find('\0', cursor + 1)
-        marker_inside = content[cursor + 1: end_marker].strip(',')
+with open(input_file, 'r') as file:
+    text = file.read()
 
-        dist_str, len_str = marker_inside.split('_')
-        dist = int(dist_str)
-        match_len = int(len_str)
-
-        tuples.append(('pointer', (dist, match_len)))  # adding tokens separately
-        cursor = end_marker + 1
-    else:
-        tuples.append(('char', content[cursor])) # adding individual characters separately
-        cursor += 1
+tuples = lz77_encode(text)
+write_initial_compression(output_file, tuples)
 
 """
 ==========================
