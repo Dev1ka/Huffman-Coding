@@ -1,6 +1,8 @@
 # IMPORTS
 import sys
 import getopt
+import time
+import os
 
 # CLI
 program_name = sys.argv[0]
@@ -179,5 +181,17 @@ def lz77_decode(output_file):
         file.write(decoded_text)
 
 
+original_size = os.path.getsize(input_file)
+start_time = time.time()
+
 huffman_decode(input_file, output_file)
 lz77_decode(output_file)
+
+end_time = time.time()
+decompressed_size = os.path.getsize(output_file)
+compression_ratio = (1 - original_size / decompressed_size) * 100
+
+print(f"Total time:     {end_time - start_time:.3f}s")
+print(f"Compressed size:  {original_size} bytes")
+print(f"Decompressed size:{decompressed_size} bytes")
+print(f"Compression:    {compression_ratio:.1f}%")
