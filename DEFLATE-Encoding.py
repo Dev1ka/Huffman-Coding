@@ -164,6 +164,7 @@ chars = []
 current_code = 0
 prev = 0
 
+
 for i in range(len(sorted_chars)):
     char = sorted_chars[i]
     length = sorted_lens[i]
@@ -177,7 +178,7 @@ for i in range(len(sorted_chars)):
     current_code += 1
     prev = length
 
-# ENCODING TEXT
+# ENCODING TEXT (HEADER)
 with open("DEFLATE-Compression.txt", "wb") as file:
     code_lookup = dict(zip(chars, codes))
 
@@ -201,10 +202,17 @@ with open("DEFLATE-Compression.txt", "wb") as file:
             token_val = ord(token[1])  # single char
 
         elif type(token) == tuple and token[0] == 'pointer':
-            if token not in pointer_map:  # check id doesn't already exist
-                pointer_map[token] = pointer_id
-                pointer_id += 1  # changes id for next token
-            token_val = pointer_map[token]
+            distance, length = token[1]
+            # special character starting point to differentiate pointers
+            header.append(0xFF)
+            header.append(0xFE)
+
+            header.append((distance >> 8) & 0xFF)  # high byte
+            header.append(distance & 0xFF)  # low byte
+            header.append((length >> 8) & 0xFF)  # high byte
+            header.append(length & 0xFF)  # low byte
+            header.append(len(code))
+            continue
 
         # split the 16-bit integer into two 8-bit bytes
         high_byte = (token_val >> 8) & 0xFF  # 00000001 for EOF, 00000000 for everything else
@@ -216,13 +224,13 @@ with open("DEFLATE-Compression.txt", "wb") as file:
         header.append(len(code))  # stores bit-length as a single byte
 
     file.write(header)
-
     # ENCODING REST OF FILE
     buffer = 0
     count = 0
 
     for i in tuples:
         current = code_lookup[i]
+
         for x in current:
             buffer <<= 1
             buffer |= int(x)

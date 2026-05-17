@@ -20,22 +20,25 @@ with open("Initial-Decoded.txt", "w") as f_out:
         for _ in range(total):
             high_byte = f_in.read(1)[0]
             low_byte = f_in.read(1)[0]
-            byte_length = f_in.read(1)[0]
 
-            # 16-bit integer token value
             token_val = (high_byte << 8) | low_byte
-            # convert integer into char/ 'EOF'
             if token_val == 256:
+                byte_length = f_in.read(1)[0]
                 token_key = "EOF"
 
-            elif token_val > 255:
-                dist = (token_val - 257) >> 5
-                length = (token_val - 257) & 0x1F
-                token_key = ('pointer', (dist, length))
+            elif high_byte == 0xFF and low_byte == 0xFE:
+                # (distance)
+                dist_hi = f_in.read(1)[0]  # high byte
+                dist_lo = f_in.read(1)[0]   # low byte
+                # (length)
+                len_hi = f_in.read(1)[0]  # high byte
+                len_lo = f_in.read(1)[0]  # low byte
+                byte_length = f_in.read(1)[0]
+                token_key = ('pointer', ((dist_hi << 8) | dist_lo, (len_hi << 8) | len_lo))  # append full 16 bit val
 
             else:
+                byte_length = f_in.read(1)[0]
                 token_key = ('char', chr(token_val))
-
             lengths[token_key] = byte_length
 
         # CREATING LOOKUP TABLE
