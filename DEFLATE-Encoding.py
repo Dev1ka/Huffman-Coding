@@ -41,57 +41,74 @@ LZ77 ENCODING
 window_size = 4096
 look_ahead = 258
 emit_match = 8
+min_match = 3
+max_chain = 246 # maximum matches checked per loop
 
 
-def longest_match(data, cursor, window, look_ahead_size):
+def _hash3(data, position):
     """
-    Finds longest match within window and look ahead buffer (section to the right of given cursor)
-    & returns longest match and dist from cursor to assist in building the LZ77 triple in main loop
+    Converts 3 consecutive characters into a single integer to use as a key instead of re-searching
+    every character in window every loop
     """
-
-    best_dist = 0
-    best_len = 0
-
-    # SEARCHING LENGTH OF WINDOW
-    for i in range(1, window + 1):
-        match_index = cursor - i
-
-        if match_index < 0:
-            break
-
-        current_len = 0
-        while current_len < look_ahead_size and (cursor + current_len) < len(data):
-            # FINDING MATCHES OF CHARS IN LOOKAHEAD & WINDOW
-            if data[match_index + current_len] == data[cursor + current_len]:
-                current_len += 1
-
-            else:
-                break
-
-        # SAVING LONGEST MATCH
-        if current_len > best_len:
-            best_len = current_len
-            best_dist = i
-
-    return best_dist, best_len
+    return (ord(data[position]) << 16) | (ord(data[position + 1]) << 8) | ord(data[position + 2])
 
 
-with open(input_file, 'r') as file:
-    text = file.read()
+def _update_hash(data, position, location, prev):
+    """
+    Saves location of 3 char key for future use
+    """
+    if position + 2 < len(data):
+        h = _hash3(data, position)  # gets hash of data[position] and the two characters after it as 1 int
+        prev[position] = location[h]  # change current position to previous occurrence
+        location[h] = position  # update most recent occurrence
 
-with open(output_file, 'w') as file:
+
+def lz77_encode(data, output_file):
+    num = len(data)
     cursor = 0
+    locations = {}
+    prev = [0] * num
 
-    while cursor < len(text):
-        match_dist, match_len = longest_match(text, cursor, window_size, look_ahead)
+    with open(output_file, 'w') as file:
+        while cursor < num:
+            # RESET PATTERN INFO
+            best_dist = 0
+            best_len = 0
 
-        if match_len >= emit_match:
-            file.write(f"\0,{match_dist}_{match_len},\0")
-            cursor += match_len
-        else:
-            current_char = text[cursor]
-            file.write(current_char)
-            cursor += 1
+            if cursor + min_match <= num:  # only search if enough chars
+                h = _hash3(data, cursor)  # encode next three chars
+                chain = locations[h]  # lookup prev occurrences (shorten manual search)
+                checked = 0
+
+                while chain and checked < max_chain:  # go through each occurrence
+                    dist = cursor - chain  # distance to match
+                    if dist > window_size:  # stop if dist exceeds window limit
+                        break
+
+                    limit = min(look_ahead, num - cursor)
+                    match_length = 0
+                    while match_length < limit and data[chain + match_length] == data[cursor + match_length]:
+                        match_length += 1  # manual search until limit reached
+
+                    if match_length > best_len:  # save the longest match
+                        best_len = match_length
+                        best_dist = dist
+
+                    chain = prev[chain]
+                    checked += 1
+
+            if best_len >= emit_match:  # saving pointer
+                file.write(f"\0,{best_dist}_{best_len},\0")
+                end = cursor + best_len
+                for i in range(cursor, min(end, num - 2)):
+                    _update_hash(data, i, locations, prev)
+                cursor = end
+
+            else:  # saving individual char
+                file.write(data[cursor])
+                _update_hash(data, cursor, locations, prev)
+                cursor += 1
+
 
 # CONVERTING LZ77 OUTPUT INTO TUPLES
 with open(output_file, 'r') as f:
