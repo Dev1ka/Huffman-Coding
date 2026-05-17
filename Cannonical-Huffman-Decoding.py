@@ -1,5 +1,7 @@
 import sys
 import getopt
+import time
+import os
 
 # CLI
 program_name = sys.argv[0]
@@ -33,69 +35,95 @@ if input_file is None or output_file is None:
 current = ""
 end = False
 
-with open(output_file, "w") as f_out:
-    with open(input_file, 'rb') as f_in:
-        # GETTING KEYS
-        byte_0 = f_in.read(1)  # byte 0 - length of header
-        total = byte_0[0]
 
-        # rebuild char, length dict
-        lengths = {}
-        for _ in range(total):
-            high_byte = f_in.read(1)[0]
-            low_byte = f_in.read(1)[0]
-            byte_length = f_in.read(1)[0]
+def build_lookup_table(f_in):
+    # GETTING KEYS
+    byte_0 = f_in.read(1)  # byte 0 - length of header
+    total = byte_0[0]
 
-            # 16-bit integer token value
-            token_val = (high_byte << 8) | low_byte
+    # rebuild char, length dict
+    lengths = {}
+    for _ in range(total):
+        high_byte = f_in.read(1)[0]
+        low_byte = f_in.read(1)[0]
+        byte_length = f_in.read(1)[0]
 
-            # convert integer into char/ 'EOF'
-            if token_val == 256:
-                token_key = "EOF"
-            else:
-                token_key = chr(token_val)
+        # 16-bit integer token value
+        token_val = (high_byte << 8) | low_byte
 
-            lengths[token_key] = byte_length
+        # convert integer into char/ 'EOF'
+        if token_val == 256:
+            token_key = "EOF"
+        else:
+            token_key = chr(token_val)
 
-        # CREATING LOOKUP TABLE
-        sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], x[0]))
-        sorted_chars = [x[0] for x in sorted_dict]
-        sorted_lens = [y[1] for y in sorted_dict]
+        lengths[token_key] = byte_length
 
-        lookup = {}
-        current_code = 0
-        prev = 0
+    # CREATING LOOKUP TABLE
+    sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], x[0]))
+    sorted_chars = [x[0] for x in sorted_dict]
+    sorted_lens = [y[1] for y in sorted_dict]
 
-        for i in range(len(sorted_chars)):
-            char = sorted_chars[i]
-            length = sorted_lens[i]
+    lookup = {}
+    current_code = 0
+    prev = 0
 
-            if prev > 0:
-                current_code <<= (length - prev)
+    for i in range(len(sorted_chars)):
+        char = sorted_chars[i]
+        length = sorted_lens[i]
 
-            # int val to binary
-            bit_string = f"{current_code:0{length}b}"
-            lookup[bit_string] = char
+        if prev > 0:
+            current_code <<= (length - prev)
 
-            current_code += 1
-            prev = length
+        # int val to binary
+        bit_string = f"{current_code:0{length}b}"
+        lookup[bit_string] = char
 
-        # DECODING TEXT
-        encoded_data = f_in.read()
+        current_code += 1
+        prev = length
 
-        for byte_value in encoded_data:
-            if end:
-                break
+    return lookup
 
-            # byte_value = integer (0-255)
-            # bits = string of 8 bits
-            bits = f"{byte_value:08b}"
-            for bit in bits:
-                current += bit
-                if current in lookup:
-                    if lookup[current] == 'EOF':
-                        end = True
-                        break
 
-                    f_out.write(lookup[current])
-                    current = ''
+def huffman_decode(input_file, output_file):
+    current = ""
+    end = False
+
+    with open(output_file, "w") as f_out:
+        with open(input_file, 'rb') as f_in:
+            lookup = build_lookup_table(f_in)
+
+            # DECODING TEXT
+            encoded_data = f_in.read()
+
+            for byte_value in encoded_data:
+                if end:
+                    break
+
+                # byte_value = integer (0-255)
+                # bits = string of 8 bits
+                bits = f"{byte_value:08b}"
+                for bit in bits:
+                    current += bit
+                    if current in lookup:
+                        if lookup[current] == 'EOF':
+                            end = True
+                            break
+
+                        f_out.write(lookup[current])
+                        current = ''
+
+
+original_size = os.path.getsize(input_file)
+start_time = time.time()
+
+huffman_decode(input_file, output_file)
+
+end_time = time.time()
+decompressed_size = os.path.getsize(output_file)
+compression_ratio = (1 - original_size / decompressed_size) * 100
+
+print(f"Total time:     {end_time - start_time:.3f}s")
+print(f"Compressed size:  {original_size} bytes")
+print(f"Decompressed size:{decompressed_size} bytes")
+print(f"Compression:    {compression_ratio:.1f}%")
