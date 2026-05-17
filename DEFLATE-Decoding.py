@@ -36,97 +36,106 @@ CANONICAL HUFFMAN DECODING
 ==========================
 """
 
-current = ""
-end = False
 
-with open(output_file, "w") as f_out:
-    with open(input_file, 'rb') as f_in:
-        # GETTING KEYS
-        # Byte 0 - length of header (high + low bytes)
-        high_total = f_in.read(1)[0]
-        low_total = f_in.read(1)[0]
-        total = (high_total << 8) | low_total
+def build_lookup_table(f_in):
+    # GETTING KEYS
+    # Byte 0 - length of header (high + low bytes)
+    high_total = f_in.read(1)[0]
+    low_total = f_in.read(1)[0]
+    total = (high_total << 8) | low_total
 
-        # rebuild char, length dict
-        lengths = {}
-        for _ in range(total):
-            high_byte = f_in.read(1)[0]
-            low_byte = f_in.read(1)[0]
+    # rebuild char, length dict
+    lengths = {}
+    for _ in range(total):
+        high_byte = f_in.read(1)[0]
+        low_byte = f_in.read(1)[0]
 
-            token_val = (high_byte << 8) | low_byte
-            if token_val == 256:
-                byte_length = f_in.read(1)[0]
-                token_key = "EOF"
+        token_val = (high_byte << 8) | low_byte
+        if token_val == 256:
+            byte_length = f_in.read(1)[0]
+            token_key = "EOF"
 
-            elif high_byte == 0xFF and low_byte == 0xFE:
-                # (distance)
-                dist_hi = f_in.read(1)[0]  # high byte
-                dist_lo = f_in.read(1)[0]   # low byte
-                # (length)
-                len_hi = f_in.read(1)[0]  # high byte
-                len_lo = f_in.read(1)[0]  # low byte
-                byte_length = f_in.read(1)[0]
-                token_key = ('pointer', ((dist_hi << 8) | dist_lo, (len_hi << 8) | len_lo))  # append full 16 bit val
+        elif high_byte == 0xFF and low_byte == 0xFE:
+            # (distance)
+            dist_hi = f_in.read(1)[0]  # high byte
+            dist_lo = f_in.read(1)[0]  # low byte
+            # (length)
+            len_hi = f_in.read(1)[0]  # high byte
+            len_lo = f_in.read(1)[0]  # low byte
+            byte_length = f_in.read(1)[0]
+            token_key = ('pointer', ((dist_hi << 8) | dist_lo, (len_hi << 8) | len_lo))  # append full 16 bit val
 
-            else:
-                byte_length = f_in.read(1)[0]
-                token_key = ('char', chr(token_val))
-            lengths[token_key] = byte_length
+        else:
+            byte_length = f_in.read(1)[0]
+            token_key = ('char', chr(token_val))
+        lengths[token_key] = byte_length
 
-        # CREATING LOOKUP TABLE
-        sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], str(x[0])))
-        sorted_chars = [x[0] for x in sorted_dict]
-        sorted_lens = [y[1] for y in sorted_dict]
+    # CREATING LOOKUP TABLE
+    sorted_dict = sorted(lengths.items(), key=lambda x: (x[1], str(x[0])))
+    sorted_chars = [x[0] for x in sorted_dict]
+    sorted_lens = [y[1] for y in sorted_dict]
 
-        lookup = {}
-        current_code = 0
-        prev = 0
+    lookup = {}
+    current_code = 0
+    prev = 0
 
-        for i in range(len(sorted_chars)):
-            char = sorted_chars[i]
-            length = sorted_lens[i]
+    for i in range(len(sorted_chars)):
+        char = sorted_chars[i]
+        length = sorted_lens[i]
 
-            if prev > 0:
-                current_code <<= (length - prev)
+        if prev > 0:
+            current_code <<= (length - prev)
 
-            # int val to binary
-            bit_string = f"{current_code:0{length}b}"
-            lookup[bit_string] = char
+        # int val to binary
+        bit_string = f"{current_code:0{length}b}"
+        lookup[bit_string] = char
 
-            current_code += 1
-            prev = length
+        current_code += 1
+        prev = length
 
-        # DECODING TEXT
-        encoded_data = f_in.read()
+    return lookup
 
-        for byte_value in encoded_data:
-            if end:
-                break
 
-            # byte_value = integer (0-255)
-            # bits = string of 8 bits
-            bits = f"{byte_value:08b}"
-            for bit in bits:
-                current += bit
+def huffman_decode(input_file, output_file):
+    current = ""
+    end = False
 
-                if current in lookup:
-                    token = lookup[current]
+    with open(output_file, "w") as f_out:
+        with open(input_file, 'rb') as f_in:
+            lookup = build_lookup_table(f_in)
 
-                    if token == 'EOF':
-                        end = True
-                        break
+            # DECODING TEXT
+            encoded_data = f_in.read()
 
-                    token_type = token[0]  # char vs pointer
-                    token_val = token[1]
+            for byte_value in encoded_data:
+                if end:
+                    break
 
-                    if token_type == 'char':
-                        f_out.write(token_val)
+                # byte_value = integer (0-255)
+                # bits = string of 8 bits
+                bits = f"{byte_value:08b}"
+                for bit in bits:
+                    current += bit
 
-                    elif token_type == 'pointer':
-                        distance, length = token_val
-                        f_out.write(f"\0,{distance}_{length},\0")  # convert into original format
+                    if current in lookup:
+                        token = lookup[current]
 
-                    current = ''
+                        if token == 'EOF':
+                            end = True
+                            break
+
+                        token_type = token[0]  # char vs pointer
+                        token_val = token[1]
+
+                        if token_type == 'char':
+                            f_out.write(token_val)
+
+                        elif token_type == 'pointer':
+                            distance, length = token_val
+                            f_out.write(f"\0,{distance}_{length},\0")  # convert into original format
+
+                        current = ''
+
 
 """
 =============
@@ -134,36 +143,41 @@ LZ77 DECODING
 =============
 """
 
-tuples = []
 
-decoded_text = ""
-with open(output_file, 'r') as f:
-    content = f.read()
+def lz77_decode(output_file):
+    decoded_text = ""
 
-cursor = 0
-while cursor < len(content):
-    if content[cursor] == '\0':  # start of token
-        end_marker = content.find('\0', cursor + 1)  # start at cursor + 1, end at end of token
+    with open(output_file, 'r') as f:
+        content = f.read()
 
-        # SAVE CONTENTS
-        marker_inside = content[cursor + 1: end_marker]
+    cursor = 0
+    while cursor < len(content):
+        if content[cursor] == '\0':  # start of token
+            end_marker = content.find('\0', cursor + 1)  # start at cursor + 1, end at end of token
 
-        # STRIP FORMATTING
-        marker_inside = marker_inside.strip(',')
-        dist_str, len_str = marker_inside.split('_')
-        dist = int(dist_str)
-        match_len = int(len_str)
+            # SAVE CONTENTS
+            marker_inside = content[cursor + 1: end_marker]
 
-        # DECODE THE POINTER
-        start_index = len(decoded_text) - dist
-        for i in range(match_len):
-            decoded_text += decoded_text[start_index + i]
+            # STRIP FORMATTING
+            marker_inside = marker_inside.strip(',')
+            dist_str, len_str = marker_inside.split('_')
+            dist = int(dist_str)
+            match_len = int(len_str)
 
-        cursor = end_marker + 1
+            # DECODE THE POINTER
+            start_index = len(decoded_text) - dist
+            for i in range(match_len):
+                decoded_text += decoded_text[start_index + i]
 
-    else:
-        decoded_text += content[cursor]  # uncompressed chars
-        cursor += 1
+            cursor = end_marker + 1
 
-with open(output_file, 'w') as file:
-    file.write(decoded_text)
+        else:
+            decoded_text += content[cursor]  # uncompressed chars
+            cursor += 1
+
+    with open(output_file, 'w') as file:
+        file.write(decoded_text)
+
+
+huffman_decode(input_file, output_file)
+lz77_decode(output_file)
